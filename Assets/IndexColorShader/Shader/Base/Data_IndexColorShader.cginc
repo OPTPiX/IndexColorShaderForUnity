@@ -17,10 +17,7 @@ struct InputVS
 struct InputPS
 {
 	float4 Position : SV_POSITION;
-	float2 Texture00UV00 : TEXCOORD0;
-	float2 Texture00UV01 : TEXCOORD1;
-	float2 Texture00UV02 : TEXCOORD2;
-	float2 Texture00UV03 : TEXCOORD3;
+	float2 Texture00UV : TEXCOORD0;
 	float4 Property : TEXCOORD7;
 	float4 ColorMain : COLOR0;
 

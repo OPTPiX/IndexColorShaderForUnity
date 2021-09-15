@@ -21,35 +21,22 @@ InputPS VS_Main(InputVS In)
 	/* Texture's UV */
 	float2 coordTexture = In.Texture00UV;
 	float2 coordTextureShift;
-	float4 property = float4(	1.0f,				/* Weight X */
-								1.0f,				/* Weight Y */
-								4.0f,				/* Count Sampling */
+	float4 property = float4(	ConstantSetting.x,	/* Texture Width */
+								ConstantSetting.x,	/* Texture Height */
+								1.0f,				/* Count Sampling */
 								ConstantSetting.w	/* Opacity */
 						);
 
+	/* Transform UV */
 	coordTexture = coordTexture * _MainTex_ST.xy + _MainTex_ST.zw;	/* TRANSFORM_TEX *//* Transform Texture */
 
-	if(1.0f <= ConstantSetting.z)
-	{	/* Interpolation: Bi-Linear */
-		float2 adjust = float2(0.5f, 0.5f);
-		float2 rateSize = ConstantSetting.xy;
-
-		coordTexture *= rateSize;
-		coordTexture -= adjust;
-		property.xy = frac(coordTexture);
-		coordTexture += adjust;
-
-		coordTextureShift = coordTexture;
-		coordTextureShift += float2(1.0f, 1.0f);
-
-		rateSize = float2(1.0f, 1.0f) / rateSize;
-		coordTexture *= rateSize;
-		coordTextureShift *= rateSize;
+	if(1.0f > ConstantSetting.z)
+	{	/* Interpolation: None(Nearest Neighbor) */
+		property.z = 1.0f;
 	}
 	else
-	{	/* Interpolation: None(Nearest Neighbor) */
-		coordTextureShift = coordTexture;	/* Same */
-		property.xy = float2(0.5f, 0.5f);	/* Average */
+	{	/* Interpolation: Bi-Linear */
+		property.z = 4.0f;
 	}
 
 	/* Vertex-Colors */
@@ -58,10 +45,7 @@ InputPS VS_Main(InputVS In)
 
 	/* Output */
 	Out.Position = coordinateVertes;
-	Out.Texture00UV00 = coordTexture;	/* LU */
-	Out.Texture00UV01 = float2(coordTextureShift.x, coordTexture.y);	/* RU */
-	Out.Texture00UV02 = coordTextureShift;	/* RU */
-	Out.Texture00UV03 = float2(coordTexture.x, coordTextureShift.y);	/* LD */
+	Out.Texture00UV = coordTexture;
 	Out.Property = property;
 	UNITY_TRANSFER_INSTANCE_ID(In, Out);
 
