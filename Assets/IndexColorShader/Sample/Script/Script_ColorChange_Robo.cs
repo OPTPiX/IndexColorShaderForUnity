@@ -17,7 +17,7 @@ public class Script_ColorChange_Robo : Script_IndexColorShader_SpritePalette
 	protected Vector4[] Palette = null;
 	public Vector4[] DataPaletteOverride;
 	public float RateBlendOverride;
-	public Library_IndexColorShader.Data.ControlMaterialPalette.KindInterpolation Interpolation;
+	public Library_IndexColorShader.KindInterpolation Interpolation;
 	#endregion Variables & Properties
 
 	/* ----------------------------------------------- Functions */

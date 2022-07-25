@@ -191,7 +191,7 @@ public class Script_Performance : MonoBehaviour
 				controlMaterial.Update(	InstanceRenderer[i],
 										DataPaletteIntegrated.Color,
 										Color.white,
-										Library_IndexColorShader.Data.ControlMaterialPalette.KindInterpolation.NONE,
+										Library_IndexColorShader.KindInterpolation.NONE,
 										null,
 										null
 									);

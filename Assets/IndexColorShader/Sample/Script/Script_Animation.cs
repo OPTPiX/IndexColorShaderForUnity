@@ -58,7 +58,7 @@ public class Script_Animation : MonoBehaviour
 		public Script_Animation_Robo.KindActionAnimation Action;
 		public float RateSpeed;
 
-		public Library_IndexColorShader.Data.ControlMaterialPalette.KindInterpolation Interpolation;
+		public Library_IndexColorShader.KindInterpolation Interpolation;
 		public Vector2 Zoom;
 
 		internal float RateBlend = 0.0f;

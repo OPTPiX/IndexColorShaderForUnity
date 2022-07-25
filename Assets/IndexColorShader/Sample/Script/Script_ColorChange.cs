@@ -56,7 +56,7 @@ public class Script_ColorChange : MonoBehaviour
 		public Script_ColorChange_Robo Instance;
 		public float RateSpeed;
 
-		public Library_IndexColorShader.Data.ControlMaterialPalette.KindInterpolation Interpolation;
+		public Library_IndexColorShader.KindInterpolation Interpolation;
 		public Vector2 Zoom;
 
 		internal float RateBlend = 0.0f;
