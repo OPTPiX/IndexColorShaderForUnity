@@ -1,7 +1,8 @@
 ﻿/**
 	Index Color Shader for Unity
 
-	Copyright(C) Web Technology Corp. 
+	Copyright(C) 1997-2021 Web Technology Corp.
+	Copyright(C) CRI Middleware Co., Ltd.
 	All rights reserved.
 */
 
@@ -50,7 +51,7 @@ public static partial class LibraryEditor_IndexColorShader
 								)
 		{
 			const string messageLogPrefix = "Main";
-			const string titleProgressBar = "Index Color Shader";
+			const string titleProgressBar = Library_IndexColorShader.SignatureNameAsset;
 
 			string nameDirectory = "";
 			string nameFileBody = "";
@@ -58,13 +59,22 @@ public static partial class LibraryEditor_IndexColorShader
 			nameInputFullPathImage = Utility.File.PathNormalize(nameInputFullPathImage);
 			string messageLogSuffix = " [" + nameInputFullPathImage + "]";
 
-			int stepFull = 7;	/* Load / Decode / Convert(Palette, Pixel) / Output(Palette, Texture, Material) */
+			const int stepLoad = 2;			/* Load / Decode */
+			const int stepConvert = 1;		/* Convert(Palette, Pixel) */
+			const int stepOutputBasic = 3;	/* Output-Basic(Palette, Texture, Material) */
+			const int stepOutputSprite = 1;	/* Output-Sprite(Prefab) */
+			const int stepOutputUI = 2;		/* Output-UI(Material, Prefab) */
+			int stepFull =	stepLoad
+							+ stepConvert
+							+ stepOutputBasic
+							+ stepOutputSprite
+							+ stepOutputUI;
 			int countStep = 0;
 
 //			Utility.Log.Message("Importing Start" + messageLogSuffix, true, false);	/* External-File only, no indent */
 
 			/* Load Image */
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Loading Image", true, countStep, stepFull);
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Loading Image", flagDisplayProgressBar, countStep, stepFull);
 			if(false == System.IO.File.Exists(nameInputFullPathImage))
 			{	/* Not Found */
 				LogError(messageLogPrefix, "File Not Found" + messageLogSuffix);
@@ -81,7 +91,7 @@ public static partial class LibraryEditor_IndexColorShader
 			countStep++;
 
 			/* Decode Image */
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Deocoding Image", true, countStep, stepFull);
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Deocoding Image", flagDisplayProgressBar, countStep, stepFull);
 			Image.InformationDecode informationDecode = Image.Decode(dataTexture, messageLogSuffix);
 			if(null == informationDecode)
 			{
@@ -90,7 +100,7 @@ public static partial class LibraryEditor_IndexColorShader
 			countStep++;
 
 			/* Convert */
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Converting Palette", true, countStep, stepFull);
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Converting Palette", flagDisplayProgressBar, countStep, stepFull);
 			Color[] palette = Image.PaletteConvert(informationDecode, messageLogSuffix);
 			if(null == palette)
 			{
@@ -99,7 +109,7 @@ public static partial class LibraryEditor_IndexColorShader
 			}
 			countStep++;
 
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Converting Pixel", true, countStep, stepFull);
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Converting Pixel", flagDisplayProgressBar, countStep, stepFull);
 			Texture2D textureIndexed = Image.PixelConvert(informationDecode, messageLogSuffix);
 			if(null == textureIndexed)
 			{
@@ -112,105 +122,144 @@ public static partial class LibraryEditor_IndexColorShader
 			informationDecode.Release();
 
 			/* Output Assets */
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Pallete asset", true, countStep, stepFull);
-			Script_IndexColorShader_Palette assetDataPalette = AssetOutputPalette(ref setting, nameFileBody, nameOutputAssetFolderBase, palette);
-			if(null == assetDataPalette)
+			bool flagIgnoreConfirmOverwrite = false;
+
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Pallete asset", flagDisplayProgressBar, countStep, stepFull);
+			Script_IndexColorShader_Palette assetDataPalette;
+			if(false == AssetOutputPalette(out assetDataPalette, ref flagIgnoreConfirmOverwrite, ref setting, nameFileBody, nameOutputAssetFolderBase, palette))
 			{
 				goto Exec_ErrorEnd;
 			}
 			countStep++;
 
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Texture asset", true, countStep, stepFull);
-			Texture2D assetTextureIndexed = AssetOutputTextureIndexed(ref setting, nameFileBody, nameOutputAssetFolderBase, textureIndexed);
-			if(null == assetTextureIndexed)
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Texture asset", flagDisplayProgressBar, countStep, stepFull);
+			Texture2D assetTextureIndexed;
+			if(false == AssetOutputTextureIndexed(out assetTextureIndexed, ref flagIgnoreConfirmOverwrite, ref setting, nameFileBody, nameOutputAssetFolderBase, textureIndexed))
 			{
 				goto Exec_ErrorEnd;
 			}
 			countStep++;
 
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Material asset", true, countStep, stepFull);
-			if(false == AssetOutputMaterial(ref setting, nameFileBody, nameOutputAssetFolderBase, assetTextureIndexed))
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Material asset", flagDisplayProgressBar, countStep, stepFull);
+			Material assetMaterial;
+			if(false == AssetOutputMaterial(out assetMaterial, ref flagIgnoreConfirmOverwrite, ref setting, nameFileBody, nameOutputAssetFolderBase, assetTextureIndexed))
 			{
 				goto Exec_ErrorEnd;
 			}
 			countStep++;
 
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, string.Empty, true, -1, -1);
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Prefab-Sprite asset", flagDisplayProgressBar, countStep, stepFull);
+			GameObject assetPrefabSprite;
+			if(false == AssetOutputPrefabSprite(out assetPrefabSprite, ref flagIgnoreConfirmOverwrite, ref setting, nameFileBody, nameOutputAssetFolderBase, assetMaterial, assetDataPalette))
+			{
+				goto Exec_ErrorEnd;
+			}
+			countStep++;
+
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Material-UI asset", flagDisplayProgressBar, countStep, stepFull);
+			Material assetMaterialUI;
+			if(false == AssetOutputMaterialUI(out assetMaterialUI, ref flagIgnoreConfirmOverwrite, ref setting, nameFileBody, nameOutputAssetFolderBase, assetTextureIndexed))
+			{
+				goto Exec_ErrorEnd;
+			}
+			countStep++;
+
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, "Output Prefab-UI asset", flagDisplayProgressBar, countStep, stepFull);
+			GameObject assetPrefabUI;
+			if(false == AssetOutputPrefabUI(out assetPrefabUI, ref flagIgnoreConfirmOverwrite, ref setting, nameFileBody, nameOutputAssetFolderBase, assetMaterialUI, assetDataPalette))
+			{
+				goto Exec_ErrorEnd;
+			}
+			countStep++;
+
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, string.Empty, flagDisplayProgressBar, -1, -1);
 //			Utility.Log.Message("Importing Complete" + messageLogSuffix, true, false);	/* External-File only, no indent */
 
 			return(true);
 
 		Exec_ErrorEnd:;
-			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, string.Empty, true, -1, -1);
+			Utility.Miscellaneous.ProgressBarUpdate(titleProgressBar, string.Empty, flagDisplayProgressBar, -1, -1);
 //			Utility.Log.Message("Importing Failed" + messageLogSuffix, true, false);	/* External-File only, no indent */
 
 			return(false);
 		}
 
-		private static Script_IndexColorShader_Palette AssetOutputPalette(	ref Setting setting,
-																			string nameAsset,
-																			string nameOutputAssetFolderBase,
-																			Color[] palette
-																		)
+		internal static bool AssetOutputPalette(	out Script_IndexColorShader_Palette assetDataPalette,
+													ref bool flagIgnoreConfirmOverwrite,
+													ref Setting setting,
+													string nameAsset,
+													string nameOutputAssetFolderBase,
+													Color[] palette
+											)
 		{
+			assetDataPalette = null;
+
 			/* Get Assets Full-Path */
-			string pathAssetFull = nameOutputAssetFolderBase;
-			if(false == pathAssetFull.EndsWith("/"))
+			string pathAssetFull = AssetPathGetFull(	nameOutputAssetFolderBase,
+														setting.RuleNameAssetFolder.NameFolderPalette,
+														setting.RuleNameAsset.NameGetAssetPalette(nameAsset),
+														ExtentionScriptableObject
+												);
+			if(null == pathAssetFull)
 			{
-				pathAssetFull += "/";
-			}
-			pathAssetFull += setting.RuleNameAssetFolder.NameFolderPalette;
-			if(false == pathAssetFull.EndsWith("/"))
-			{
-				pathAssetFull += "/";
-			}
-			pathAssetFull += setting.RuleNameAsset.NameGetAssetPalette(nameAsset) + ExtentionScriptableObject;
-			if(true == string.IsNullOrEmpty(pathAssetFull))
-			{
-				return(null);
+				return(false);
 			}
 
 			/* Get asset to save */
-			Script_IndexColorShader_Palette assetDataPalette = AssetGetPalette(ref setting, pathAssetFull);
+			bool flagEnableUpdate;
+			assetDataPalette = AssetGetPalette(	out flagEnableUpdate,
+												ref flagIgnoreConfirmOverwrite,
+												ref setting,
+												pathAssetFull
+											);
 			if(null == assetDataPalette)
-			{	/* Error or Canceled */
-				return(null);
+			{	/* Error */
+				return(false);
 			}
 
-			/* Write palette */
-			if(null != palette)
+			/* Update asset */
+			if(true == flagEnableUpdate)
 			{
-				/* Clear & Set palettes */
-				int countPalette = assetDataPalette.Color.Length;
-				for(int i=0; i<countPalette; i++)
+				/* Write palette */
+				if(null != palette)
 				{
-					assetDataPalette.Color[i] = Color.clear;
+					/* Clear & Set palettes */
+					int countPalette = assetDataPalette.Color.Length;
+					for(int i=0; i<countPalette; i++)
+					{
+						assetDataPalette.Color[i] = Color.clear;
+					}
+
+					if(palette.Length < countPalette)
+					{
+						countPalette = palette.Length;
+					}
+					for(int i=0; i<countPalette; i++)
+					{
+						assetDataPalette.Color[i] = palette[i];
+//						assetDataPalette.Color[i] = new Vector4(palette[i].r, palette[i].g, palette[i].b, palette[i].a);
+					}
 				}
 
-				if(palette.Length < countPalette)
-				{
-					countPalette = palette.Length;
-				}
-				for(int i=0; i<countPalette; i++)
-				{
-					assetDataPalette.Color[i] = palette[i];
-//					assetDataPalette.Color[i] = new Vector4(palette[i].r, palette[i].g, palette[i].b, palette[i].a);
-				}
+				/* Reset Data-Version */
+				/* MEMO: For now, Overwrite to the latest version. */
+				assetDataPalette.Version = Script_IndexColorShader_Palette.KindVersion.SUPPORT_LATEST;
+
+				/* Dirty data */
+				EditorUtility.SetDirty(assetDataPalette);
+				AssetDatabase.SaveAssets();
 			}
 
-			/* Reset Data-Version */
-			/* MEMO: For now, Overwrite to the latest version. */
-			assetDataPalette.Version = Script_IndexColorShader_Palette.KindVersion.SUPPORT_LATEST;
-
-			/* Dirty data */
-			EditorUtility.SetDirty(assetDataPalette);
-			AssetDatabase.SaveAssets();
-
-			return(assetDataPalette);
+			return(true);
 		}
-		private static Script_IndexColorShader_Palette AssetGetPalette(ref Setting setting, string pathAsset)
+		private static Script_IndexColorShader_Palette AssetGetPalette(	out bool flagEnableUpdate,
+																		ref bool flagIgnoreConfirmOverwrite,
+																		ref Setting setting,
+																		string pathAsset
+																	)
 		{
 			const string messageLogPrefix = "Asset-Create (Data-Palette)";
+			flagEnableUpdate = false;
 
 			/* Check existing */
 			Script_IndexColorShader_Palette assetDataPalette = AssetDatabase.LoadAssetAtPath<Script_IndexColorShader_Palette>(pathAsset);
@@ -221,7 +270,7 @@ public static partial class LibraryEditor_IndexColorShader
 				string nameAssetFileBody = "";
 				string nameAssetFileExtension = "";
 
-				Utility.File.PathSplit(	out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
+				Utility.File.PathSplit(out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
 				if(true == string.IsNullOrEmpty(Utility.File.AssetFolderCreate(nameAssetFolder)))
 				{
 					LogError(messageLogPrefix, "Asset-Folder \"" + nameAssetFolder + "\" could not be created");
@@ -238,55 +287,78 @@ public static partial class LibraryEditor_IndexColorShader
 			else
 			{	/* Exist (Overwrite) */
 				/* Check overwrite */
-				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(ref setting.ConfirmOverWrite.FlagPalette, pathAsset, "Palette"))
+				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(	ref flagIgnoreConfirmOverwrite,
+																				setting.ConfirmOverWrite.FlagPalette,
+																				pathAsset,
+																				"Palette"
+																			)
+				)
 				{	/* Not overwrite (Cancel) */
 					/* MEMO: No message */
-					return(null);
+//					flagEnableUpdate = false;
+
+					return(assetDataPalette);
 				}
 			}
+
+			flagEnableUpdate = true;
 
 			return(assetDataPalette);
 		}
 
-		private static Texture2D AssetOutputTextureIndexed(	ref Setting setting,
-															string nameAsset,
-															string nameOutputAssetFolderBase,
-															Texture2D textureIndexed
-														)
+		internal static bool AssetOutputTextureIndexed(	out Texture2D assetTexture,
+														ref bool flagIgnoreConfirmOverwrite,
+														ref Setting setting,
+														string nameAsset,
+														string nameOutputAssetFolderBase,
+														Texture2D textureIndexed
+													)
 		{
+			assetTexture = null;
+
 			/* Get Assets Full-Path */
-			string pathAssetFull = nameOutputAssetFolderBase;
-			if(false == pathAssetFull.EndsWith("/"))
+			string pathAssetFull = AssetPathGetFull(	nameOutputAssetFolderBase,
+														setting.RuleNameAssetFolder.NameFolderTexture,
+														setting.RuleNameAsset.NameGetAssetTexture(nameAsset),
+														ExtentionTextureIndexed
+												);
+			if(null == pathAssetFull)
 			{
-				pathAssetFull += "/";
-			}
-			pathAssetFull += setting.RuleNameAssetFolder.NameFolderTexture;
-			if(false == pathAssetFull.EndsWith("/"))
-			{
-				pathAssetFull += "/";
-			}
-			pathAssetFull += setting.RuleNameAsset.NameGetAssetTexture(nameAsset) + ExtentionTextureIndexed;
-			if(true == string.IsNullOrEmpty(pathAssetFull))
-			{
-				return(null);
+				return(false);
 			}
 
 			/* Get asset to save */
-			Texture2D assetTexture = AssetGetTextureImporter(ref setting, pathAssetFull, textureIndexed);
+			bool flagEnableUpdate;
+			assetTexture = AssetGetTextureImporter(	out flagEnableUpdate,
+													ref flagIgnoreConfirmOverwrite,
+													ref setting,
+													pathAssetFull,
+													textureIndexed
+												);
 			if(null == assetTexture)
-			{	/* Error or Canceled */
-				return(null);
+			{	/* Error */
+				return(false);
 			}
 
-			/* Dirty data */
-			EditorUtility.SetDirty(assetTexture);
-			AssetDatabase.SaveAssets();
+			/* Update asset */
+			if(true == flagEnableUpdate)
+			{
+				/* Dirty data */
+				EditorUtility.SetDirty(assetTexture);
+				AssetDatabase.SaveAssets();
+			}
 
 			return(assetTexture);
 		}
-		private static Texture2D AssetGetTextureImporter(ref Setting setting, string pathAsset, Texture2D textureIndexed)
+		private static Texture2D AssetGetTextureImporter(	out bool flagEnableUpdate,
+															ref bool flagIgnoreConfirmOverwrite,
+															ref Setting setting,
+															string pathAsset,
+															Texture2D textureIndexed
+													)
 		{
 			const string messageLogPrefix = "Asset-Create (Texture-Encode)";
+			flagEnableUpdate = false;
 
 			bool optionIsSRGB = false;
 			bool optionIsReadable = false;
@@ -307,7 +379,7 @@ public static partial class LibraryEditor_IndexColorShader
 				string nameAssetFileBody = "";
 				string nameAssetFileExtension = "";
 
-				Utility.File.PathSplit(	out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
+				Utility.File.PathSplit(out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
 				if(true == string.IsNullOrEmpty(Utility.File.AssetFolderCreate(nameAssetFolder)))
 				{
 					LogError(messageLogPrefix, "Asset-Folder \"" + nameAssetFolder + "\" could not be created");
@@ -317,10 +389,17 @@ public static partial class LibraryEditor_IndexColorShader
 			else
 			{	/* Exist (Overwrite) */
 				/* Check overwrite */
-				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(ref setting.ConfirmOverWrite.FlagTexture, pathAsset, "Texture"))
+				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(	ref flagIgnoreConfirmOverwrite,
+																				setting.ConfirmOverWrite.FlagTexture,
+																				pathAsset,
+																				"Texture"
+																			)
+				)
 				{	/* Not overwrite (Cancel) */
 					/* MEMO: No message */
-					return(null);
+//					flagEnableUpdate = false;
+
+					return(Utility.Asset.AssetLoadPath<Texture2D>(pathAsset));
 				}
 
 				/* Back up importer's setting */
@@ -334,6 +413,8 @@ public static partial class LibraryEditor_IndexColorShader
 				optionTextureType = importer.textureType;
 				optionSpriteImportMode = importer.spriteImportMode;
 			}
+
+			flagEnableUpdate = true;
 
 			/* Texture output */
 			string pathAssetNative = Utility.File.PathGetAssetNative(pathAsset);
@@ -376,53 +457,70 @@ public static partial class LibraryEditor_IndexColorShader
 
 			return(assetTexture);
 		}
-		private static bool AssetOutputMaterial(	ref Setting setting,
+
+		internal static bool AssetOutputMaterial(	out Material assetMaterial,
+													ref bool flagIgnoreConfirmOverwrite,
+													ref Setting setting,
 													string nameAsset,
 													string nameOutputAssetFolderBase,
 													Texture2D textureIndexed
 											)
 		{
+			assetMaterial = null;
+
 			if(false == setting.Basic.FlagCreateMaterial)
 			{
 				return(true);
 			}
 
 			/* Get Assets Full-Path */
-			string pathAssetFull = nameOutputAssetFolderBase;
-			if(false == pathAssetFull.EndsWith("/"))
-			{
-				pathAssetFull += "/";
-			}
-			pathAssetFull += setting.RuleNameAssetFolder.NameFolderMaterial;
-			if(false == pathAssetFull.EndsWith("/"))
-			{
-				pathAssetFull += "/";
-			}
-			pathAssetFull += setting.RuleNameAsset.NameGetAssetMaterial(nameAsset) + ExtentionMaterial;
-			if(true == string.IsNullOrEmpty(pathAssetFull))
+			string pathAssetFull = AssetPathGetFull(	nameOutputAssetFolderBase,
+														setting.RuleNameAssetFolder.NameFolderMaterial,
+														setting.RuleNameAsset.NameGetAssetMaterial(nameAsset),
+														ExtentionMaterial
+												);
+			if(null == pathAssetFull)
 			{
 				return(false);
 			}
 
 			/* Get asset to save */
-			Material assetMaterial = AssetGetMaterial(ref setting, pathAssetFull);
+			bool flagEnableUpdate;
+			assetMaterial = AssetGetMaterial(	out flagEnableUpdate,
+												ref flagIgnoreConfirmOverwrite,
+												pathAssetFull,
+												setting.ConfirmOverWrite.FlagMaterial,
+												setting.Basic.MaterialSource,
+												"Material"
+										);
 			if(null == assetMaterial)
-			{	/* Error or Canceled */
+			{	/* Error */
 				return(false);
 			}
 
-			/* Set Texture */
-			assetMaterial.mainTexture = textureIndexed;
+			/* Update asset */
+			if(true == flagEnableUpdate)
+			{
+				/* Set Texture */
+				assetMaterial.mainTexture = textureIndexed;
 
-			/* Dirty data */
-			EditorUtility.SetDirty(assetMaterial);
-			AssetDatabase.SaveAssets();
+				/* Dirty data */
+				EditorUtility.SetDirty(assetMaterial);
+				AssetDatabase.SaveAssets();
+			}
 
 			return(true);
 		}
-		private static Material AssetGetMaterial(ref Setting setting, string pathAsset)
+		private static Material AssetGetMaterial(	out bool flagEnableUpdate,
+													ref bool flagIgnoreConfirmOverwrite,
+													string pathAsset,
+													bool flagConfirmOverwrite,
+													Material assetSource,
+													string textKindMaterial
+												)
 		{
-			const string messageLogPrefix = "Asset-Create (Material)";
+			string messageLogPrefix = "Asset-Create " + textKindMaterial;
+			flagEnableUpdate = false;
 
 			/* Check existing */
 			Material assetMaterial = AssetDatabase.LoadAssetAtPath<Material>(pathAsset);
@@ -433,7 +531,7 @@ public static partial class LibraryEditor_IndexColorShader
 				string nameAssetFileBody = "";
 				string nameAssetFileExtension = "";
 
-				Utility.File.PathSplit(	out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
+				Utility.File.PathSplit(out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
 				if(true == string.IsNullOrEmpty(Utility.File.AssetFolderCreate(nameAssetFolder)))
 				{
 					LogError(messageLogPrefix, "Asset-Folder \"" + nameAssetFolder + "\" could not be created");
@@ -441,28 +539,437 @@ public static partial class LibraryEditor_IndexColorShader
 				}
 
 				/* Create Asset */
-				assetMaterial = new Material(setting.Basic.MaterialSource);
+				assetMaterial = new Material(assetSource);
 				AssetDatabase.CreateAsset(assetMaterial, pathAsset);
 			}
 			else
 			{	/* Exist (Overwrite) */
 				/* Check overwrite */
-				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(ref setting.ConfirmOverWrite.FlagMaterial, pathAsset, "Material"))
+				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(	ref flagIgnoreConfirmOverwrite,
+																				flagConfirmOverwrite,
+																				pathAsset,
+																				textKindMaterial
+																			)
+				)
 				{	/* Not overwrite (Cancel) */
 					/* MEMO: No message */
-					return(null);
+//					flagEnableUpdate = true;
+
+					return(assetMaterial);
 				}
 			}
 
+			flagEnableUpdate = true;
+
 			return(assetMaterial);
+		}
+
+		internal static bool AssetOutputPrefabSprite(	out GameObject assetPrefabSprite,
+														ref bool flagIgnoreConfirmOverwrite,
+														ref Setting setting,
+														string nameAsset,
+														string nameOutputAssetFolderBase,
+														Material material,
+														Script_IndexColorShader_Palette dataPalette
+												)
+		{
+			assetPrefabSprite = null;
+
+			if(false == setting.Basic.FlagCreatePrefabSprite)
+			{
+				return(true);
+			}
+
+			/* Get Assets Full-Path */
+			string pathAssetFull = AssetPathGetFull(	nameOutputAssetFolderBase,
+														setting.RuleNameAssetFolder.NameFolderPrefabSprite,
+														setting.RuleNameAsset.NameGetAssetPrefabSprite(nameAsset),
+														ExtentionPrefab
+												);
+			if(null == pathAssetFull)
+			{
+				return(false);
+			}
+
+			/* Get asset to save */
+			bool flagEnableUpdate;
+			assetPrefabSprite = AssetGetPrefabSprite(	out flagEnableUpdate,
+														ref flagIgnoreConfirmOverwrite,
+														ref setting,
+														pathAssetFull
+												);
+			if(null == assetPrefabSprite)
+			{	/* Error */
+				return(false);
+			}
+
+			/* Update asset */
+			if(true == flagEnableUpdate)
+			{
+				Script_IndexColorShader_Sprite assetSprite = assetPrefabSprite.GetComponent<Script_IndexColorShader_Sprite>();
+				UnityEngine.SpriteRenderer assetSpriteRenderer = assetPrefabSprite.GetComponent<UnityEngine.SpriteRenderer>();
+
+				/* Set other assets: Script_IndexColorShader_Sprite */
+				assetSprite.DataPalette = dataPalette;
+				assetSprite.Texture = (null != material) ? (Texture2D)material.mainTexture : null;
+				assetSprite.MaterialMaster = setting.Basic.MaterialSource;	// material;
+
+				/* Set other assets: UnityEngine.SpriteRenderer */
+				assetSpriteRenderer.material = material;
+				assetSpriteRenderer.sprite = null;
+
+				/* Dirty data */
+				EditorUtility.SetDirty(assetPrefabSprite);
+				AssetDatabase.SaveAssets();
+			}
+
+			return(true);
+		}
+		private static GameObject AssetGetPrefabSprite(	out bool flagEnableUpdate,
+														ref bool flagIgnoreConfirmOverwrite,
+														ref Setting setting,
+														string pathAsset
+													)
+		{
+			const string messageLogPrefix = "Asset-Create (Prefab-Sprite)";
+			flagEnableUpdate = false;
+
+			/* Check existing : GameObject & Script-Sprite */
+			GameObject gameObjectSprite = AssetDatabase.LoadAssetAtPath<GameObject>(pathAsset);
+			Script_IndexColorShader_Sprite assetPrefabSprite = null;
+			if(null == gameObjectSprite)
+			{	/* Not Exist (Create New) */
+				/* Creagte Asset-Folder */
+				string nameAssetFolder = "";
+				string nameAssetFileBody = "";
+				string nameAssetFileExtension = "";
+
+				Utility.File.PathSplit(out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
+				if(true == string.IsNullOrEmpty(Utility.File.AssetFolderCreate(nameAssetFolder)))
+				{
+					LogError(messageLogPrefix, "Asset-Folder \"" + nameAssetFolder + "\" could not be created");
+					return(null);
+				}
+
+				/* Create GameObject */
+				gameObjectSprite = new GameObject();
+				assetPrefabSprite = gameObjectSprite.AddComponent<Script_IndexColorShader_Sprite>();
+				if(null == assetPrefabSprite)
+				{
+					return(null);
+				}
+
+				/* Clean up component */
+				AssetResetPrefabSpriteScript(assetPrefabSprite);
+			}
+			else
+			{	/* Exist (Overwrite) */
+				/* Check overwrite */
+				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(	ref flagIgnoreConfirmOverwrite,
+																				setting.ConfirmOverWrite.FlagPrefabUI,
+																				pathAsset,
+																				"Prefab-Sprite"
+																			)
+				)
+				{	/* Not overwrite (Cancel) */
+					/* MEMO: No message */
+//					flagEnableUpdate = false;
+
+					return(gameObjectSprite);
+				}
+
+				/* Instantiate & Update */
+				GameObject gameObjectUIPrefab = gameObjectSprite;
+				gameObjectSprite = UnityEngine.Object.Instantiate(gameObjectUIPrefab);
+				assetPrefabSprite = gameObjectSprite.GetComponent<Script_IndexColorShader_Sprite>();
+				if(null == assetPrefabSprite)
+				{	/*  Component missing */
+					assetPrefabSprite = gameObjectSprite.AddComponent<Script_IndexColorShader_Sprite>();
+
+					/* Clean up component */
+					AssetResetPrefabSpriteScript(assetPrefabSprite);
+				}
+			}
+
+			/* Check existing : GameObject & Script-Sprite */
+			UnityEngine.SpriteRenderer assetSpriteRenderer = gameObjectSprite.GetComponent<UnityEngine.SpriteRenderer>();
+			if(null == assetSpriteRenderer)
+			{
+				assetSpriteRenderer = gameObjectSprite.AddComponent<UnityEngine.SpriteRenderer>();
+				if(null == assetSpriteRenderer)
+				{
+					return(null);
+				}
+
+				AssetResetPrefabSpriteRenderer(assetSpriteRenderer);
+			}
+
+			/* Save assets */
+			GameObject prefabUI = PrefabUtility.SaveAsPrefabAsset(gameObjectSprite, pathAsset);
+			AssetDatabase.SaveAssets();
+
+			/* Destroy Temporary */
+			UnityEngine.Object.DestroyImmediate(gameObjectSprite);
+
+			flagEnableUpdate = true;
+
+			return(prefabUI);
+		}
+		private static void AssetResetPrefabSpriteScript(Script_IndexColorShader_Sprite scriptSprite)
+		{
+			scriptSprite.Interpolation = Library_IndexColorShader.KindInterpolation.LINEAR;
+			scriptSprite.Texture = null;	/* Crear */
+			scriptSprite.RectDraw = new Rect(Vector2.zero, -Vector2.one);	/* Rect.zero; */
+			scriptSprite.RatePivot = new Vector2(0.5f, 0.5f);
+			scriptSprite.PixelsPerUnit = 0.0f;
+		}
+		private static void AssetResetPrefabSpriteRenderer(UnityEngine.SpriteRenderer renderer)
+		{
+			/* MEMO: Now, nothing to set. */
+		}
+
+		internal static bool AssetOutputMaterialUI(	out Material assetMaterial,
+													ref bool flagIgnoreConfirmOverwrite,
+													ref Setting setting,
+													string nameAsset,
+													string nameOutputAssetFolderBase,
+													Texture2D textureIndexed
+												)
+		{
+			assetMaterial = null;
+
+			if(false == setting.Basic.FlagCreatePrefabUI)
+			{
+				return(false);
+			}
+
+			/* Get Assets Full-Path */
+			string pathAssetFull = AssetPathGetFull(	nameOutputAssetFolderBase,
+														setting.RuleNameAssetFolder.NameFolderMaterialUI,
+														setting.RuleNameAsset.NameGetAssetMaterialUI(nameAsset),
+														ExtentionMaterial
+												);
+			if(null == pathAssetFull)
+			{
+				return(false);
+			}
+
+			/* Get asset to save */
+			bool flagEnableUpdate;
+			assetMaterial = AssetGetMaterial(	out flagEnableUpdate,
+												ref flagIgnoreConfirmOverwrite,
+												pathAssetFull,
+												setting.ConfirmOverWrite.FlagMaterialUI,
+												setting.Basic.MaterialSourceUI,
+												"Material-UI"
+										);
+			if(null == assetMaterial)
+			{	/* Error */
+				return(false);
+			}
+
+			/* Update asset */
+			if(true == flagEnableUpdate)
+			{
+				/* Set Texture */
+				assetMaterial.mainTexture = textureIndexed;
+
+				/* Dirty data */
+				EditorUtility.SetDirty(assetMaterial);
+				AssetDatabase.SaveAssets();
+			}
+
+			return(true);
+		}
+
+		internal static bool AssetOutputPrefabUI(	out GameObject assetPrefabUI,
+													ref bool flagIgnoreConfirmOverwrite,
+													ref Setting setting,
+													string nameAsset,
+													string nameOutputAssetFolderBase,
+													Material material,
+													Script_IndexColorShader_Palette dataPalette
+											)
+		{
+			assetPrefabUI = null;
+
+			if(false == setting.Basic.FlagCreatePrefabUI)
+			{
+				return(true);
+			}
+
+			/* Get Assets Full-Path */
+			string pathAssetFull = AssetPathGetFull(	nameOutputAssetFolderBase,
+														setting.RuleNameAssetFolder.NameFolderPrefabUI,
+														setting.RuleNameAsset.NameGetAssetPrefabUI(nameAsset),
+														ExtentionPrefab
+												);
+			if(null == pathAssetFull)
+			{
+				return(false);
+			}
+
+			/* Get asset to save */
+			bool flagEnableUpdate;
+			assetPrefabUI = AssetGetPrefabUI(	out flagEnableUpdate,
+												ref flagIgnoreConfirmOverwrite,
+												ref setting,
+												pathAssetFull
+										);
+			if(null == assetPrefabUI)
+			{	/* Error */
+				return(false);
+			}
+
+			/* Update asset */
+			if(true == flagEnableUpdate)
+			{
+				Script_IndexColorShader_UIImage assetUIImage = assetPrefabUI.GetComponent<Script_IndexColorShader_UIImage>();
+
+				/* Set other assets */
+				assetUIImage.DataPalette = dataPalette;
+				assetUIImage.material = material;
+
+				/* Dirty data */
+				EditorUtility.SetDirty(assetPrefabUI);
+				AssetDatabase.SaveAssets();
+			}
+
+			return(true);
+		}
+		private static GameObject AssetGetPrefabUI(	out bool flagEnableUpdate,
+													ref bool flagIgnoreConfirmOverwrite,
+													ref Setting setting,
+													string pathAsset
+											)
+		{
+			const string messageLogPrefix = "Asset-Create (Prefab-UI)";
+			flagEnableUpdate = false;
+
+			/* Check existing */
+			GameObject gameObjectUI = AssetDatabase.LoadAssetAtPath<GameObject>(pathAsset);
+			Script_IndexColorShader_UIImage assetPrefabUI = null;
+			if(null == gameObjectUI)
+			{	/* Not Exist (Create New) */
+				/* Creagte Asset-Folder */
+				string nameAssetFolder = "";
+				string nameAssetFileBody = "";
+				string nameAssetFileExtension = "";
+
+				Utility.File.PathSplit(out nameAssetFolder, out nameAssetFileBody, out nameAssetFileExtension, pathAsset);
+				if(true == string.IsNullOrEmpty(Utility.File.AssetFolderCreate(nameAssetFolder)))
+				{
+					LogError(messageLogPrefix, "Asset-Folder \"" + nameAssetFolder + "\" could not be created");
+					return(null);
+				}
+
+				/* Create GameObject */
+				gameObjectUI = new GameObject();
+				assetPrefabUI = gameObjectUI.AddComponent<Script_IndexColorShader_UIImage>();
+				if(null == assetPrefabUI)
+				{
+					return(null);
+				}
+
+				/* Clean up component */
+				AssetResetPrefabUIScript(assetPrefabUI);
+			}
+			else
+			{	/* Exist (Overwrite) */
+				/* Check overwrite */
+				if(false == Utility.File.PermissionGetConfirmDialogueOverwrite(	ref flagIgnoreConfirmOverwrite,
+																				setting.ConfirmOverWrite.FlagPrefabUI,
+																				pathAsset,
+																				"Prefab-UI"
+																			)
+				)
+				{	/* Not overwrite (Cancel) */
+					/* MEMO: No message */
+//					flagEnableUpdate = false;
+
+					return(gameObjectUI);
+				}
+
+				/* Instantiate & Update */
+				GameObject gameObjectUIPrefab = gameObjectUI;
+				gameObjectUI = UnityEngine.Object.Instantiate(gameObjectUIPrefab);
+				assetPrefabUI = gameObjectUI.GetComponent<Script_IndexColorShader_UIImage>();
+				if(null == assetPrefabUI)
+				{	/*  Component missing */
+					assetPrefabUI = gameObjectUI.AddComponent<Script_IndexColorShader_UIImage>();
+
+					/* Clean up component */
+					AssetResetPrefabUIScript(assetPrefabUI);
+				}
+			}
+
+			/* Save assets */
+			GameObject prefabUI = PrefabUtility.SaveAsPrefabAsset(gameObjectUI, pathAsset);
+			AssetDatabase.SaveAssets();
+
+			/* Destroy Temporary */
+			UnityEngine.Object.DestroyImmediate(gameObjectUI);
+
+			flagEnableUpdate = true;
+
+			return(prefabUI);
+		}
+		private static void AssetResetPrefabUIScript(Script_IndexColorShader_UIImage scriptUIImage)
+		{
+			scriptUIImage.color = Color.white;
+			scriptUIImage.raycastTarget = true;
+			scriptUIImage.maskable = true;
+			scriptUIImage.Interpolation = Library_IndexColorShader.KindInterpolation.LINEAR;
+			scriptUIImage.FlagHideForce = false;
+			scriptUIImage.uvRect = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
+			scriptUIImage.SizeImageForce = -Vector2.one;
+			scriptUIImage.StencilCompare = UnityEngine.Rendering.CompareFunction.Disabled;
+			scriptUIImage.StencilID = 0;
+		}
+
+		private static string AssetPathGetFull(string nameBase, string nameFolderSub, string nameAsset, string extention)
+		{
+			if(true == string.IsNullOrEmpty(nameAsset))
+			{	/* Error */
+				return(null);
+			}
+
+			string pathAssetFull = nameBase;
+			if(true == string.IsNullOrEmpty(pathAssetFull))
+			{
+				pathAssetFull = string.Empty;
+			}
+			if(false == pathAssetFull.EndsWith("/"))
+			{
+				pathAssetFull += "/";
+			}
+
+			if(false == string.IsNullOrEmpty(nameFolderSub))
+			{
+				pathAssetFull += nameFolderSub;
+				if(false == pathAssetFull.EndsWith("/"))
+				{
+					pathAssetFull += "/";
+				}
+			}
+
+			pathAssetFull += nameAsset;
+			if(false == string.IsNullOrEmpty(extention))
+			{
+				pathAssetFull += extention;
+			}
+
+			return(pathAssetFull);
 		}
 		#endregion Functions
 
 		/* ----------------------------------------------- Enums & Constants */
 		#region Enums & Constants
+		internal const string ExtentionPrefab = ".prefab";
 		internal const string ExtentionScriptableObject = ".asset";
 		internal const string ExtentionTextureIndexed = ".png";
 		internal const string ExtentionMaterial = ".mat";
+		internal const string ExtentionSprite = ".png";
 		#endregion Enums & Constants
 
 		/* ----------------------------------------------- Classes, Structs & Interfaces */
@@ -548,9 +1055,13 @@ public static partial class LibraryEditor_IndexColorShader
 				return(PathSplit(out nameDirectory, out nameFileBody, out nameFileExtension, fileNameFullPath));
 			}
 
-			internal static bool PermissionGetConfirmDialogueOverwrite(ref bool flagSwitchSetting, string nameAsset, string nameTypeAsset)
+			internal static bool PermissionGetConfirmDialogueOverwrite(	ref bool flagIgnoewConfirm,
+																		bool flagSwitchSetting,
+																		string nameAsset,
+																		string nameTypeAsset
+																	)
 			{
-				if(false == flagSwitchSetting)
+				if((false == flagSwitchSetting) || (true == flagIgnoewConfirm))
 				{	/* No-Confirm */
 					return(true);
 				}
@@ -569,7 +1080,7 @@ public static partial class LibraryEditor_IndexColorShader
 						break;
 
 					case 1:	/* All */
-						flagSwitchSetting = false;
+						flagIgnoewConfirm = false;
 						rv = true;
 						break;
 
@@ -578,6 +1089,7 @@ public static partial class LibraryEditor_IndexColorShader
 						break;
 
 				}
+
 				return(rv);
 			}
 
