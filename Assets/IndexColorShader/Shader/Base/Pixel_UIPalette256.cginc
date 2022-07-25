@@ -8,8 +8,6 @@
 
 fixed4 PS_Main(InputPS In) : SV_Target
 {
-	UNITY_SETUP_INSTANCE_ID(In);
-
 	float2 coordTexel = In.Texture00UV;
 
 	/* When "Nearest Neighbor" (No-Interpolation) */
@@ -62,7 +60,18 @@ fixed4 PS_Main(InputPS In) : SV_Target
 #endif
 
 	/* Considering Vertex-Color */
+	color += ConstantTextureSampleAdd;
 	color *= In.ColorMain;
+
+	/* Masking & Clipping */
+#ifdef UNITY_UI_CLIP_RECT
+	half2 mask = saturate((ConstantClipRect.zw - ConstantClipRect.xy - abs(In.MaskUV.xy)) * In.MaskUV.zw);
+	color.a *= mask.x * mask.y;
+#endif
+
+#ifdef UNITY_UI_ALPHACLIP
+	clip(color.a - 0.001);
+#endif
 
 	return(color);
 }

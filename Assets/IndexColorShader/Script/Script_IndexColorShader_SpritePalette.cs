@@ -1,7 +1,8 @@
 ﻿/**
 	Index Color Shader for Unity
 
-	Copyright(C) Web Technology Corp. 
+	Copyright(C) 1997-2021 Web Technology Corp.
+	Copyright(C) CRI Middleware Co., Ltd.
 	All rights reserved.
 */
 
@@ -41,7 +42,7 @@ public class Script_IndexColorShader_SpritePalette : MonoBehaviour
 
 		/* Update Shader-Constants */
 		ConstantsUpdateShader(	controlMaterialPalette,
-								Library_IndexColorShader.Data.ControlMaterialPalette.KindInterpolation.LINEAR,
+								Library_IndexColorShader.KindInterpolation.LINEAR,
 								null,	/* DataPalette.Color */
 								null
 							);
@@ -72,7 +73,7 @@ public class Script_IndexColorShader_SpritePalette : MonoBehaviour
 	}
 
 	public void ConstantsUpdateShader(	Library_IndexColorShader.Data.ControlMaterialPalette controlMaterialPalette,
-										Library_IndexColorShader.Data.ControlMaterialPalette.KindInterpolation interpolation,
+										Library_IndexColorShader.KindInterpolation interpolation,
 										Vector4[] tableColor,
 										Vector4? textureTillingOffset
 									)
@@ -133,7 +134,7 @@ public class Script_IndexColorShader_SpritePalette : MonoBehaviour
 										texture,
 										textureTillingOffset
 									);
-}
+	}
 	#endregion Functions
 
 	/* ----------------------------------------------- Enums & Constants */

@@ -5,7 +5,7 @@
 //	Copyright(C) CRI Middleware Co., Ltd.
 //	All rights reserved.
 //
-Shader "Custom/IndexColorShader/Palette256"
+Shader "Custom/IndexColorShader/UIPalette256"
 {
 	Properties
 	{
@@ -43,9 +43,9 @@ Shader "Custom/IndexColorShader/Palette256"
 			#pragma multi_compile_instancing
 			#include "UnityCG.cginc"
 
-			#include "Base/Data_IndexColorShader.cginc"
-			#include "Base/Vertex_Palette256.cginc"
-			#include "Base/Pixel_Palette256.cginc"
+			#include "Base/Data_IndexColorShaderUI.cginc"
+			#include "Base/Vertex_UIPalette256.cginc"
+			#include "Base/Pixel_UIPalette256.cginc"
 			ENDCG
 		}
 	}
