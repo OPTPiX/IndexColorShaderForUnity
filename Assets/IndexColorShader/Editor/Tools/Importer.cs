@@ -1,7 +1,8 @@
 ﻿/**
 	Index Color Shader for Unity
 
-	Copyright(C) Web Technology Corp. 
+	Copyright(C) 1997-2021 Web Technology Corp.
+	Copyright(C) CRI Middleware Co., Ltd.
 	All rights reserved.
 */
 
@@ -136,16 +137,36 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 
 		SettingImport.Basic.FlagCreateMaterial = EditorGUILayout.ToggleLeft("Create Material", SettingImport.Basic.FlagCreateMaterial);
 		EditorGUI.indentLevel = levelIndent + 1;
-		EditorGUILayout.LabelField("Create a material with textures and shaders assigned.");
-		EditorGUI.indentLevel = levelIndent;
-
+		EditorGUILayout.LabelField("Create material with textures and shaders assigned.");
 		if(true == SettingImport.Basic.FlagCreateMaterial)
 		{
 			EditorGUILayout.Space();
 			SettingImport.Basic.MaterialSource = EditorGUILayout.ObjectField("Source Material", SettingImport.Basic.MaterialSource, typeof(Material), true) as Material;
 		}
+
+		EditorGUILayout.Space();
+		EditorGUI.indentLevel = levelIndent;
+
+		SettingImport.Basic.FlagCreatePrefabSprite = EditorGUILayout.ToggleLeft("Create Prefav for Sprite", SettingImport.Basic.FlagCreatePrefabSprite);
+		EditorGUI.indentLevel = levelIndent + 1;
+		EditorGUILayout.LabelField("Create prefabl assigned for Sprite.");
+		EditorGUILayout.LabelField("Material will be the created in \"Create Material\".");
+
+		EditorGUILayout.Space();
+		EditorGUI.indentLevel = levelIndent;
+
+		SettingImport.Basic.FlagCreatePrefabUI = EditorGUILayout.ToggleLeft("Create Prefab for UI", SettingImport.Basic.FlagCreatePrefabUI);
+		EditorGUI.indentLevel = levelIndent + 1;
+		EditorGUILayout.LabelField("Create prefab & material assigned for UI (Canvas).");
+		if(true == SettingImport.Basic.FlagCreatePrefabUI)
+		{
+			EditorGUILayout.Space();
+			SettingImport.Basic.MaterialSourceUI = EditorGUILayout.ObjectField("Source Material", SettingImport.Basic.MaterialSourceUI, typeof(Material), true) as Material;
+		}
+
 		EditorGUILayout.Space();
 		EditorGUILayout.Space();
+		EditorGUI.indentLevel = levelIndent;
 	}
 	private void FoldOutExecConfirmOverWrite(int levelIndent)
 	{
@@ -157,6 +178,9 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 		SettingImport.ConfirmOverWrite.FlagTexture = EditorGUILayout.ToggleLeft("Textures", SettingImport.ConfirmOverWrite.FlagTexture);
 		SettingImport.ConfirmOverWrite.FlagPalette = EditorGUILayout.ToggleLeft("Palette", SettingImport.ConfirmOverWrite.FlagPalette);
 		SettingImport.ConfirmOverWrite.FlagMaterial = EditorGUILayout.ToggleLeft("Material", SettingImport.ConfirmOverWrite.FlagMaterial);
+		SettingImport.ConfirmOverWrite.FlagPrefabSprite = EditorGUILayout.ToggleLeft("Prefab-Sprite", SettingImport.ConfirmOverWrite.FlagPrefabSprite);
+		SettingImport.ConfirmOverWrite.FlagPrefabUI = EditorGUILayout.ToggleLeft("Prefab-UI", SettingImport.ConfirmOverWrite.FlagPrefabUI);
+		SettingImport.ConfirmOverWrite.FlagMaterialUI = EditorGUILayout.ToggleLeft("Material-UI", SettingImport.ConfirmOverWrite.FlagMaterialUI);
 
 		EditorGUILayout.Space();
 		EditorGUILayout.Space();
@@ -173,6 +197,9 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 		SettingImport.RuleNameAsset.NamePrefixTexture = EditorGUILayout.TextField("Texture", SettingImport.RuleNameAsset.NamePrefixTexture);
 		SettingImport.RuleNameAsset.NamePrefixPalette = EditorGUILayout.TextField("Palette", SettingImport.RuleNameAsset.NamePrefixPalette);
 		SettingImport.RuleNameAsset.NamePrefixMaterial = EditorGUILayout.TextField("Material", SettingImport.RuleNameAsset.NamePrefixMaterial);
+		SettingImport.RuleNameAsset.NamePrefixPrefabSprite = EditorGUILayout.TextField("Prefab-Sprite", SettingImport.RuleNameAsset.NamePrefixPrefabSprite);
+		SettingImport.RuleNameAsset.NamePrefixPrefabUI = EditorGUILayout.TextField("Prefab-UI", SettingImport.RuleNameAsset.NamePrefixPrefabUI);
+		SettingImport.RuleNameAsset.NamePrefixMaterialUI = EditorGUILayout.TextField("Material-UI", SettingImport.RuleNameAsset.NamePrefixMaterialUI);
 
 		SettingImport.RuleNameAsset.Adjust();
 
@@ -190,6 +217,9 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 		SettingImport.RuleNameAssetFolder.NameFolderTexture = EditorGUILayout.TextField("Texture", SettingImport.RuleNameAssetFolder.NameFolderTexture);
 		SettingImport.RuleNameAssetFolder.NameFolderPalette = EditorGUILayout.TextField("Palette", SettingImport.RuleNameAssetFolder.NameFolderPalette);
 		SettingImport.RuleNameAssetFolder.NameFolderMaterial = EditorGUILayout.TextField("Material", SettingImport.RuleNameAssetFolder.NameFolderMaterial);
+		SettingImport.RuleNameAssetFolder.NameFolderPrefabSprite = EditorGUILayout.TextField("Prefab-Sprite", SettingImport.RuleNameAssetFolder.NameFolderPrefabSprite);
+		SettingImport.RuleNameAssetFolder.NameFolderPrefabUI = EditorGUILayout.TextField("Prefab-UI", SettingImport.RuleNameAssetFolder.NameFolderPrefabUI);
+		SettingImport.RuleNameAssetFolder.NameFolderMaterialUI = EditorGUILayout.TextField("Material-UI", SettingImport.RuleNameAssetFolder.NameFolderMaterialUI);
 
 		SettingImport.RuleNameAssetFolder.Adjust();
 
@@ -211,6 +241,7 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 		public string NameFolderImportPrevious;
 
 		public bool FlagFoldOutBasic;
+
 		public bool FlagFoldOutConfirmOverWrite;
 
 		public bool FlagFoldOutAdvancedOprions;
@@ -231,10 +262,10 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 			NameFolderImportPrevious = nameFolderImportPrevious;
 
 			FlagFoldOutBasic = flagFoldOutBasic;
+
 			FlagFoldOutConfirmOverWrite = flagFoldOutConfirmOverWrite;
 
 			FlagFoldOutAdvancedOprions = flagFoldOutAdvancedOprions;
-
 			FlagFoldOutRuleNameAsset = flagFoldOutRuleNameAsset;
 			FlagFoldOutRuleNameAssetFolder = flagFoldOutRuleNameAssetFolder;
 		}
@@ -249,10 +280,10 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 			NameFolderImportPrevious = LibraryEditor_IndexColorShader.Utility.Prefs.StringLoad(PrefsKeyNameFolderImportPrevious, Default.NameFolderImportPrevious);
 
 			FlagFoldOutBasic = EditorPrefs.GetBool(PrefsKeyFlagFoldOutBasic, Default.FlagFoldOutBasic);
+
 			FlagFoldOutConfirmOverWrite = EditorPrefs.GetBool(PrefsKeyFlagFoldOutConfirmOverWrite, Default.FlagFoldOutConfirmOverWrite);
 
 			FlagFoldOutAdvancedOprions = EditorPrefs.GetBool(PrefsKeyFlagFoldOutAdvancedOprions, Default.FlagFoldOutAdvancedOprions);
-
 			FlagFoldOutRuleNameAsset = EditorPrefs.GetBool(PrefsKeyFlagFoldOutRuleNameAsset, Default.FlagFoldOutRuleNameAsset);
 			FlagFoldOutRuleNameAssetFolder = EditorPrefs.GetBool(PrefsKeyFlagFoldOutRuleNameAssetFolder, Default.FlagFoldOutRuleNameAssetFolder);
 
@@ -264,10 +295,10 @@ public sealed class MenuItem_IndexColorShader_ImportTexture : EditorWindow
 			LibraryEditor_IndexColorShader.Utility.Prefs.StringSave(PrefsKeyNameFolderImportPrevious, NameFolderImportPrevious);
 
 			EditorPrefs.SetBool(PrefsKeyFlagFoldOutBasic, FlagFoldOutBasic);
+
 			EditorPrefs.SetBool(PrefsKeyFlagFoldOutConfirmOverWrite, FlagFoldOutConfirmOverWrite);
 
 			EditorPrefs.SetBool(PrefsKeyFlagFoldOutAdvancedOprions, FlagFoldOutAdvancedOprions);
-
 			EditorPrefs.SetBool(PrefsKeyFlagFoldOutRuleNameAsset, FlagFoldOutRuleNameAsset);
 			EditorPrefs.SetBool(PrefsKeyFlagFoldOutRuleNameAssetFolder, FlagFoldOutRuleNameAssetFolder);
 

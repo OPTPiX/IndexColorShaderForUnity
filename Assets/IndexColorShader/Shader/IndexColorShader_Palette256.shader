@@ -1,7 +1,8 @@
 ﻿//
 //	Shader : Indexed 256 LUT
 //
-//	Copyright(C) Web Technology Corp.
+//	Copyright(C) 1997-2021 Web Technology Corp.
+//	Copyright(C) CRI Middleware Co., Ltd.
 //	All rights reserved.
 //
 Shader "Custom/IndexColorShader/Palette256"
