@@ -8,6 +8,8 @@
 
 // #define COMPILEOPTION_INHERIT_SPRITEPALETTE
 
+#define COUNTERMEASURE_VERTEXRANGE_OVER
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -187,7 +189,11 @@ public class Script_IndexColorShader_Sprite : MonoBehaviour
 			/* MEMO: Texture must be made at maximum size.                      */
 			/*       If initial size is small, cannot enlarge size any further. */
 			Rect rectDraw = new Rect(0.0f, 0.0f, texture.width, texture.height);
+#if COUNTERMEASURE_VERTEXRANGE_OVER
+			InstanceSprite = UnityEngine.Sprite.Create(texture, rectDraw, RatePivot, PixelsPerUnit, 0, SpriteMeshType.FullRect);
+#else
 			InstanceSprite = UnityEngine.Sprite.Create(texture, rectDraw, RatePivot);
+#endif
 #endif
 		}
 		if(null == InstanceMaterial)
@@ -332,7 +338,12 @@ public class Script_IndexColorShader_Sprite : MonoBehaviour
 		vertexSprite[1] = vertexRD;
 		vertexSprite[2].x = vertexRD.x;		vertexSprite[2].y = vertexLU.y;
 		vertexSprite[3].x = vertexLU.x;		vertexSprite[3].y = vertexRD.y;
+
+#if COUNTERMEASURE_VERTEXRANGE_OVER
+//		InstanceSprite.OverrideGeometry(vertexSprite, InstanceSprite.triangles);
+#else
 		InstanceSprite.OverrideGeometry(vertexSprite, InstanceSprite.triangles);
+#endif
 
 		InstanceRendererSprite.sprite = InstanceSprite;
 

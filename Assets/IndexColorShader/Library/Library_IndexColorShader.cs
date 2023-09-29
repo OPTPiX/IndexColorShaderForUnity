@@ -15,7 +15,7 @@ public static partial class Library_IndexColorShader
 	/* ----------------------------------------------- Signatures */
 	#region Signatures
 	public const string SignatureNameAsset = "IndexColorShader for Unity";
-	public const string SignatureVersionAsset = "1.1.0";
+	public const string SignatureVersionAsset = "1.1.1";
 	public const string SignatureNameDistributor = "CRI Middleware Co., Ltd.";
 	#endregion Signatures
 
